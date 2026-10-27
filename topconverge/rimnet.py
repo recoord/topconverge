@@ -37,8 +37,8 @@ def lens_arrays(lens):
 
 
 def undistort(px, K, D):
-    return cv2.undistortPointsIter(np.asarray(px, np.float64).reshape(-1, 1, 2), K, D, None, None,
-                                   (cv2.TERM_CRITERIA_COUNT | cv2.TERM_CRITERIA_EPS, 60, 1e-9)).reshape(-1, 2)
+    return cv2.undistortPoints(np.asarray(px, np.float64).reshape(-1, 1, 2), K, D, None, None, None,
+                               criteria=(cv2.TERM_CRITERIA_COUNT | cv2.TERM_CRITERIA_EPS, 60, 1e-9)).reshape(-1, 2)
 
 
 def distort(n, K, D):

@@ -40,7 +40,7 @@ function quality(q) { return q === null || q === undefined ? '' : typeof q === '
 
 function drawTile(cv, it) {
     const img = new Image();
-    img.loading = 'lazy';
+    img.onerror = () => { cv.width = 48; cv.height = 27; cv.getContext('2d').fillStyle = '#633'; cv.getContext('2d').fillRect(0, 0, 48, 27); };
     img.onload = () => {
         cv.width = img.naturalWidth; cv.height = img.naturalHeight;
         const g = cv.getContext('2d');
