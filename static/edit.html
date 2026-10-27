@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>topconverge annotator</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="editor">
+<div class="bar">
+    <a href="/" id="back">frames</a>
+    <button id="prev" title="previous frame of the list (←)">‹</button>
+    <span id="name" class="tnum"></span>
+    <button id="next" title="next frame of the list (→)">›</button>
+    <span id="pos" class="dim tnum"></span>
+    <span class="grow"></span>
+    <span class="dim">state</span>
+    <button data-q="needs_work" title="needs work (0)">needs work</button>
+    <button data-q="unusable" title="unusable (X)">unusable</button>
+    <button data-q="1" title="1 star (1)">★</button>
+    <button data-q="2" title="2 stars (2)">★★</button>
+    <button data-q="3" title="3 stars (3)">★★★</button>
+    <button id="save" class="save" disabled title="save (S)">Save</button>
+</div>
+<div class="bar">
+    <button id="step" title="one network step (Shift+A)">Step</button>
+    <button id="auto" title="network steps until it settles, at most 60 (A); any click stops it">Auto</button>
+    <button id="reset" title="points back to the start: the middle of each side (R)">Reset</button>
+    <button id="undo" title="undo (Ctrl+Z)">Undo</button>
+    <button id="redo" title="redo (Ctrl+Y / Ctrl+Shift+Z)">Redo</button>
+    <button id="fit" title="fit the picture (F)">Fit</button>
+    <button id="netbtn" title="show what the network sees for the current rim (V)">Network view</button>
+    <button id="helpbtn" title="show / hide the help (H)">?</button>
+    <span id="status" class="dim tnum"></span>
+    <span class="grow"></span>
+    <span id="meta" class="dim"></span>
+</div>
+<div id="work">
+    <canvas id="cv"></canvas>
+    <div id="netview"><img id="netimg" alt=""><span class="cap">network input: green = current rim, magenta = predicted corners</span></div>
+    <div id="help">
+        <b>Drag</b> a point to move it, drag elsewhere to pan, <b>wheel</b> zooms about the pointer, two fingers pinch.<br>
+        The rim is the half pitch: <b>1</b> frontline / centerline, <b>2</b> frontline / goalline, <b>3</b> goalline / sideline,
+        <b>4</b> sideline / centerline. Points may lie outside the picture.<br>
+        <b>A</b> Auto, <b>Shift+A</b> Step, <b>R</b> Reset, <b>Ctrl+Z / Ctrl+Y</b> undo / redo, <b>0 X 1 2 3</b> state,
+        <b>S</b> save, <b>← →</b> frames, <b>F</b> fit, <b>V</b> network view, <b>H</b> this help.
+    </div>
+</div>
+<script type="module" src="/static/edit.js"></script>
+</body>
+</html>

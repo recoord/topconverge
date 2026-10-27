@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>topconverge frames</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="bar filters">
+    <b>topconverge</b>
+    <select id="filter">
+        <option value="all">all frames</option>
+        <option value="rim">with a rim</option>
+        <option value="norim">without a rim</option>
+        <option value="unannotated">unannotated (added)</option>
+        <option value="needs_work">needs work</option>
+        <option value="unusable">unusable</option>
+        <option value="stars">starred (1-3)</option>
+        <option value="heldout">held out from the model</option>
+        <option value="train">model training frames</option>
+        <option value="edited">edited here</option>
+    </select>
+    <select id="view"><option value="">L and R</option><option value="L">L</option><option value="R">R</option></select>
+    <span id="count" class="dim tnum"></span>
+    <span class="grow"></span>
+    <span id="model" class="dim"></span>
+</div>
+<div id="grid" class="grid"></div>
+<script type="module">
+import { FILTERS } from '/static/filters.js';
+const $ = id => document.getElementById(id);
+let items = [];
+const prefs = JSON.parse(sessionStorage.getItem('tc-filter') || '{}');
+if (prefs.f) $('filter').value = prefs.f;
+if (prefs.v) $('view').value = prefs.v;
+
+function quality(q) { return q === null || q === undefined ? '' : typeof q === 'number' ? '★'.repeat(q) : q.replace('_', ' '); }
+
+function drawTile(cv, it) {
+    const img = new Image();
+    img.loading = 'lazy';
+    img.onload = () => {
+        cv.width = img.naturalWidth; cv.height = img.naturalHeight;
+        const g = cv.getContext('2d');
+        g.drawImage(img, 0, 0);
+        if (it.rim) {
+            const s = cv.width / it.width;
+            g.strokeStyle = 'rgba(255,0,255,.85)'; g.lineWidth = 2; g.setLineDash([8, 6]);
+            g.beginPath();
+            it.rim.forEach(([x, y], i) => i ? g.lineTo(x * s, y * s) : g.moveTo(x * s, y * s));
+            g.closePath(); g.stroke();
+        }
+    };
+    img.src = `/thumbs/${it.id}.jpg`;
+}
+
+function render() {
+    const f = $('filter').value, v = $('view').value;
+    sessionStorage.setItem('tc-filter', JSON.stringify({ f, v }));
+    const list = items.filter(it => FILTERS[f](it) && (!v || it.view === v));
+    $('count').textContent = `${list.length} of ${items.length}`;
+    const grid = $('grid');
+    grid.innerHTML = '';
+    const io = new IntersectionObserver(es => es.forEach(e => {
+        if (e.isIntersecting) { io.unobserve(e.target); drawTile(e.target, e.target._it); }
+    }), { rootMargin: '400px' });
+    for (const it of list) {
+        const a = document.createElement('a');
+        a.className = 'tile'; a.href = `/edit/${it.id}?f=${f}&v=${v}`;
+        const cv = document.createElement('canvas'); cv._it = it;
+        const q = it.quality === null || it.quality === undefined ? '' : `<span class="chip q-${it.quality}">${quality(it.quality)}</span>`;
+        a.innerHTML = `<div class="meta"><span class="tnum">${it.id}</span><span>${q} <span class="dim">${it.split || ''}</span></span></div>`;
+        a.prepend(cv);
+        grid.append(a);
+        io.observe(cv);
+    }
+}
+
+$('filter').onchange = render;
+$('view').onchange = render;
+items = await (await fetch('/api/items')).json();
+render();
+fetch('/api/status').then(r => r.json()).then(s => {
+    $('model').textContent = `model ${s.weights.weights} (step ${s.weights.train_step}) on ${s.device || '…'}`;
+});
+</script>
+</body>
+</html>

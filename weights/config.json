@@ -1,0 +1,18 @@
+{
+ "weights": "rim_iter4_sides.pt",
+ "arch": "smp.FPN",
+ "encoder": "resnet34",
+ "in_channels": 4,
+ "classes": 4,
+ "margin": 12.5,
+ "res": 1024,
+ "tex": [
+  1920,
+  1080
+ ],
+ "alpha": 0.5,
+ "start": "sides",
+ "train_step": 16000,
+ "holdout": 5,
+ "note": "models/rim/iter4-sides of the indexer project (hm recipe, margin 12.5, start sides, batch 3, 16000 steps), weights stored as float16"
+}

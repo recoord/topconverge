@@ -1,0 +1,6 @@
+torch>=2.1
+segmentation-models-pytorch>=0.3
+opencv-python-headless>=4.8
+numpy
+flask>=3.0
+waitress
