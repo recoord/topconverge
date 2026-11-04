@@ -1,7 +1,7 @@
 # topconverge
 
 Find the **rim** of a football pitch in a fisheye-corrected broadcast camera frame by iterating a network on the
-*top view*. This repo holds a dataset of annotated frames, the trained network, and a small standalone server to
+*top view*. This repo holds a dataset of annotated frames, the trained network, its training code, and a small standalone server to
 browse the frames, annotate them, and let the network place the rim.
 
 ## The rim
@@ -141,12 +141,37 @@ and those frames do not settle.
 Compared with the original float32 service, the first step differs by 0.01–0.8 px, which comes from the float16
 weights. Frames that settle end within a few pixels of it; frames that do not settle can wander further apart.
 
+## Training
+
+```sh
+python -m topconverge.train --out runs/mine                  # the recipe of the shipped weights, on the train and after splits
+python -m topconverge.train --out runs/mine --splits train   # exactly the frames the shipped weights saw
+python -m topconverge.train --out runs/mine --init weights --steps 2000 --lr 1e-4   # continue from the shipped weights
+```
+
+- **Data:** frames with a rim and 1-3 stars, loaded at half resolution into RAM (about 6 MB a frame). Saving a frame in the annotator
+  changes what the next run trains on. The `heldout` split never trains; it is scored by Auto every `--eval-every` steps.
+- **A sample:** the true rim disturbed in the plane (0.3-25 units per corner), or on the picture somewhere between the start and the truth.
+  The view is rendered through that estimate, and the network learns where the true corners appear in it.
+- **Loss:** smooth L1 of the soft-argmax in plane units, plus the cross-entropy of each heat map against a Gaussian at the true corner.
+- **Recipe:** AdamW, one-cycle learning rate up to 3e-4, batch 3, 16 000 steps, ResNet-34 from ImageNet (downloaded on the first run), colour jitter.
+- **Cost:** batch 3 fits a 6 GB card. On an RTX 3080 a step took about 0.45 s including the heat pauses below, so a full run is about 2 hours.
+- **Heat:** training pauses at 80 C and resumes at 72 C (`--pause-temp`, `--resume-temp`, `--temp-gpu`; `--pause-temp 0` turns it off).
+
+`--out` ends up with `config.json` and `model.pt` (the layout of `weights/`, float32), `recipe.json`, `history.jsonl` and `eval-<step>.json`. To use a run:
+
+```sh
+python server.py --weights runs/mine
+python -m topconverge.evaluate --weights runs/mine --split heldout
+```
+
 ## Files
 
 ```
 server.py                 the web server (Flask; waitress if installed)
 topconverge/rimnet.py     lens, homography, top-view render, network, step / iterate
 topconverge/evaluate.py   Auto from the start vs the annotated rims
+topconverge/train.py      training
 static/                   the frame list and the annotator (plain ES modules, no build step)
 weights/                  config.json + the float16 weights
 data/                     images/ and labels/
