@@ -40,9 +40,10 @@ A right lens's rim turns the other way, so its view comes out mirrored and point
 for the network. Annotation and Auto start from the middle of each side of the picture: 1 bottom, 2 left, 3 top,
 4 right, mirrored for R.
 
-The weights (`weights/rim_iter4_sides.pt`, stored as float16) are model `iter4-sides`. It was trained for
-16 000 steps (batch 3) on the starred rims that existed then, with recordings held out by
-`crc32(recording uuid) % 5 == 0`.
+The weights (`weights/rim_sides_all.pt`, stored as float16) come from `topconverge.train` in this repo: 16 000 steps
+(batch 3) on the starred frames of the `train` and `after` splits, with recordings held out by
+`crc32(recording uuid) % 5 == 0`. The earlier model `iter4-sides`, trained on the `train` split only, is kept in
+`weights/iter4-sides/` (`--weights weights/iter4-sides`).
 
 ## Dataset (`data/`)
 
@@ -80,8 +81,8 @@ The weights (`weights/rim_iter4_sides.pt`, stored as float16) are model `iter4-s
 | value | meaning |
 |---|---|
 | `heldout` | The recording was held out of training. These are the honest test frames. |
-| `train` | The annotation existed when training ended. A few came in during the run. |
-| `after` | First saved after training ended. The model never saw these either. |
+| `train` | The annotation existed when `iter4-sides` finished training. A few came in during that run. |
+| `after` | First saved after `iter4-sides` finished. The shipped weights train on these; `iter4-sides` never saw them. |
 | `unannotated` | One of the extra frames, from recordings with no rim annotation at all. |
 
 Contents:
@@ -128,24 +129,25 @@ On the 46 starred held-out frames (60 half steps from the start; numbers from th
 
 | corner | 1 | 2 | 3 | 4 |
 |---|---|---|---|---|
-| median error, px | 27.5 | 3.1 | 2.2 | 1.3 |
+| median error, px | 25.9 | 3.2 | 2.3 | 1.7 |
+| `iter4-sides`, px | 27.5 | 3.1 | 2.2 | 1.3 |
 
-- **Corners 2–4:** within 5 px on 39 % of the frames, within 10 px on 54 %.
-- **All four corners:** within 10 px on 11 %, within 25 px on 33 %.
-- **Settling:** the rim settled on 74 % of the frames, after a median of 15 steps.
+- **Corners 2–4:** within 5 px on 46 % of the frames, within 10 px on 59 % (`iter4-sides`: 39 %, 54 %).
+- **All four corners:** within 10 px on 11 %, within 25 px on 41 % (`iter4-sides`: 11 %, 33 %).
+- **Settling:** the rim settled on 87 % of the frames, after a median of 16 steps (`iter4-sides`: 74 %, 15 steps).
 
 Corner 1 usually lies far outside the picture (under the camera). There a pixel covers a long way on the ground, so
 both the label and the network are loose. The failures are mostly frames where corner 4 or corner 1 runs off,
 and those frames do not settle.
 
-Compared with the original float32 service, the first step differs by 0.01–0.8 px, which comes from the float16
-weights. Frames that settle end within a few pixels of it; frames that do not settle can wander further apart.
+The float16 weights differ a little from their float32 originals: for `iter4-sides` the first step differed by
+0.01–0.8 px. Frames that settle end within a few pixels of the float32 result; frames that do not settle can wander further apart.
 
 ## Training
 
 ```sh
 python -m topconverge.train --out runs/mine                  # the recipe of the shipped weights, on the train and after splits
-python -m topconverge.train --out runs/mine --splits train   # exactly the frames the shipped weights saw
+python -m topconverge.train --out runs/mine --splits train   # the frames iter4-sides saw
 python -m topconverge.train --out runs/mine --init weights --steps 2000 --lr 1e-4   # continue from the shipped weights
 ```
 
@@ -173,6 +175,6 @@ topconverge/rimnet.py     lens, homography, top-view render, network, step / ite
 topconverge/evaluate.py   Auto from the start vs the annotated rims
 topconverge/train.py      training
 static/                   the frame list and the annotator (plain ES modules, no build step)
-weights/                  config.json + the float16 weights
+weights/                  config.json + the float16 weights; iter4-sides/ holds the earlier model
 data/                     images/ and labels/
 ```

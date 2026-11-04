@@ -1,6 +1,6 @@
 /* edit.js - the rim annotator: four points on the picture, the rim's sides drawn as the straight lines of the world they are
  * (straight in undistorted space, curved through the lens), Step / Auto from the network, state, save, undo / redo. */
-import { lensUndist, lensDist } from '/static/lens.js';
+import { lensSide } from '/static/lens.js';
 import { FILTERS } from '/static/filters.js';
 
 const $ = id => document.getElementById(id);
@@ -36,15 +36,7 @@ function setQuality(q) {
 function toScreen(p) { return [p[0] * view.s + view.x, p[1] * view.s + view.y]; }
 function toImage(x, y) { return [(x - view.x) / view.s, (y - view.y) / view.s]; }
 
-function sidePoints(a, b, n = 64) {
-    /* the straight line of the world between two image points: straight in undistorted space, drawn back through the lens */
-    const L = lab.lens, ua = lensUndist(L, a[0], a[1]), ub = lensUndist(L, b[0], b[1]), out = [];
-    for (let i = 0; i <= n; i++) {
-        const t = i / n;
-        out.push(lensDist(L, ua[0] + (ub[0] - ua[0]) * t, ua[1] + (ub[1] - ua[1]) * t));
-    }
-    return out;
-}
+function sidePoints(a, b, n = 64) { return lensSide(lab.lens, a, b, n); }
 
 function draw() {
     const dpr = devicePixelRatio || 1, W = work.clientWidth, H = work.clientHeight;

@@ -11,7 +11,7 @@ soft-argmax from being dragged by probability spread over the view (outside the 
 
 Frames of the heldout split never train; they are scored every --eval-every steps by Auto from the start (eval-<step>.json). --out then
 holds config.json and model.pt, the same layout as weights/, so `server.py --weights` and `topconverge.evaluate --weights` read it.
-The defaults are the recipe of the shipped weights, except that those saw only the frames of the train split (--splits train).
+The defaults are the recipe of the shipped weights (weights/); the earlier weights/iter4-sides saw only the train split (--splits train).
 """
 import argparse
 import json

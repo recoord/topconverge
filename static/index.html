@@ -30,6 +30,7 @@
 <div id="grid" class="grid"></div>
 <script type="module">
 import { FILTERS } from '/static/filters.js';
+import { lensSide } from '/static/lens.js';
 const $ = id => document.getElementById(id);
 let items = [];
 const prefs = JSON.parse(sessionStorage.getItem('tc-filter') || '{}');
@@ -49,7 +50,10 @@ function drawTile(cv, it) {
             const s = cv.width / it.width;
             g.strokeStyle = 'rgba(255,0,255,.85)'; g.lineWidth = 2; g.setLineDash([8, 6]);
             g.beginPath();
-            it.rim.forEach(([x, y], i) => i ? g.lineTo(x * s, y * s) : g.moveTo(x * s, y * s));
+            /* the sides as the editor draws them: straight in undistorted space, curved through the lens */
+            it.rim.forEach((p, i) => lensSide(it.lens, p, it.rim[(i + 1) % it.rim.length]).forEach(([x, y], j) => {
+                if (i === 0 && j === 0) g.moveTo(x * s, y * s); else g.lineTo(x * s, y * s);
+            }));
             g.closePath(); g.stroke();
         }
     };

@@ -33,3 +33,13 @@ export function lensDist(l, x, y) {
     const yd = y * rad + c.p1 * (r2 + 2 * y * y) + 2 * c.p2 * x * y + c.s3 * r2 + c.s4 * r2 * r2;
     return [xd * l.fx + l.cx, yd * l.fy + l.cy];
 }
+
+/* the straight line of the world between two image points: straight in undistorted space, drawn back through the lens */
+export function lensSide(l, a, b, n = 64) {
+    const ua = lensUndist(l, a[0], a[1]), ub = lensUndist(l, b[0], b[1]), out = [];
+    for (let i = 0; i <= n; i++) {
+        const t = i / n;
+        out.push(lensDist(l, ua[0] + (ub[0] - ua[0]) * t, ua[1] + (ub[1] - ua[1]) * t));
+    }
+    return out;
+}

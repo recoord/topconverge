@@ -100,7 +100,7 @@ def create_app(data, weights, device):
             lab = json.loads(p.read_text())
             out.append({'id': p.stem, 'recording': lab.get('recording'), 'view': lab.get('view'), 'quality': lab.get('quality'),
                         'split': lab.get('split'), 'source': lab.get('source'), 'has_rim': lab.get('rim') is not None,
-                        'rim': lab.get('rim'), 'width': lab.get('width'), 'height': lab.get('height'), 'edited': lab.get('edited')})
+                        'rim': lab.get('rim'), 'lens': lab.get('lens'), 'width': lab.get('width'), 'height': lab.get('height'), 'edited': lab.get('edited')})
         return jsonify(out)
 
     @app.get('/api/label/<img_id>')
