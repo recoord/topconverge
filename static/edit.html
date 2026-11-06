@@ -38,7 +38,7 @@
 </div>
 <div id="work">
     <canvas id="cv"></canvas>
-    <div id="netview"><img id="netimg" alt=""><span class="cap">network input: green = current rim, magenta = predicted corners</span></div>
+    <div id="netview"><img id="netimg" alt=""><span class="cap" title="green = the current rim, magenta = the corners the network predicts; a crop model shows its four full-resolution crops on the right, each with the share of its corner's answer that comes from the crop">network input</span><label class="opt" title="draw the network view in the browser (follows a drag at once); off: the server's exact input as a picture"><input type="checkbox" id="netlocal"> smooth</label></div>
     <div id="help">
         <b>Drag</b> a point to move it, drag elsewhere to pan, <b>wheel</b> zooms about the pointer, two fingers pinch.<br>
         The rim is the half pitch: <b>1</b> frontline / centerline, <b>2</b> frontline / goalline, <b>3</b> goalline / sideline,

@@ -112,7 +112,8 @@ few seconds on a CPU (2.7 s with 8 threads), and Auto usually needs 15–25 step
 - **Ctrl+Z / Ctrl+Y** undo and redo.
 - **0 / X / 1 / 2 / 3** set the state: needs work, unusable, or stars.
 - **S** saves. **← / →** go to the previous or next frame of the list. **F** fits the picture to the window.
-- **V** shows the exact network input for the current rim, with the corners it predicts.
+- **V** shows the network input for the current rim, with the corners it predicts. It is drawn in the browser so it follows a drag;
+  untick **smooth** in its corner for the server's exact picture instead.
 - **H** shows or hides the help.
 
 Saving rewrites `data/labels/<id>.json`, so your edits show up as a git diff. Untouched start points of an
@@ -159,6 +160,7 @@ python -m topconverge.train --out runs/mine --init weights --steps 2000 --lr 1e-
 - **Recipe:** AdamW, one-cycle learning rate up to 3e-4, batch 3, 16 000 steps, ResNet-34 from ImageNet (downloaded on the first run), colour jitter.
 - **Cost:** batch 3 fits a 6 GB card. On an RTX 3080 a step took about 0.45 s including the heat pauses below, so a full run is about 2 hours.
 - **Heat:** training pauses at 80 C and resumes at 72 C (`--pause-temp`, `--resume-temp`, `--temp-gpu`; `--pause-temp 0` turns it off).
+  The guard reads `nvidia-smi`, so it is off on an AMD card.
 
 `--out` ends up with `config.json` and `model.pt` (the layout of `weights/`, float32), `recipe.json`, `history.jsonl` and `eval-<step>.json`. To use a run:
 
@@ -166,6 +168,23 @@ python -m topconverge.train --out runs/mine --init weights --steps 2000 --lr 1e-
 python server.py --weights runs/mine
 python -m topconverge.evaluate --weights runs/mine --split heldout
 ```
+
+### Experimental: corner crops
+
+```sh
+python -m topconverge.train --out runs/crop --crop 512 --init weights --steps 8000 --lr 1e-4 [--crop-lr-mult 10]
+```
+
+The model also sees a 512 x 512 crop of the full-resolution picture round each current corner. The crops go through a second FPN,
+one heat map per crop. Each corner's answer is still one distribution over the plane, built from the view's pixels and its crop's
+pixels. Each sample point is weighted by the plane area it covers. Inside the part of the picture a crop covers, the crop's pixels
+replace the view's: their score is the view's heat map sampled there plus the crop's own. So a crop can sharpen the view's answer but
+cannot easily move it somewhere else. The crop branch's last layer starts at zero, so at step 0 the model equals the `--init` model.
+The full-resolution frames are kept in RAM (about 25 MB a frame). The network view shows the four crops beside the top view, each with
+the share of its corner's answer that it carries.
+
+A first run (8000 steps, lr 1e-4) showed no gain at step 4000, but the crop branch had barely started to contribute: switching it
+off moved the predictions by 0.04-0.16 px. `--crop-lr-mult` gives the crop branch its own, higher learning rate.
 
 ## Files
 

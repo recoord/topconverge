@@ -152,6 +152,23 @@ def create_app(data, weights, device):
         ok, buf = cv2.imencode('.png', img)
         return send_file(io.BytesIO(buf.tobytes()), mimetype='image/png')
 
+    @app.post('/api/pred/<img_id>')
+    def pred(img_id):
+        """what the network answers for the posted rim, as numbers (the browser draws the network view itself): the predicted corners in
+        plane units of the view and in image px; for a crop model also the crops' origins and each crop's share of its corner's answer"""
+        lab = read_label(img_id)
+        body = request.get_json(force=True)
+        cur = rim_of(body, lab)
+        with lock:
+            m = net()
+            _, _, _, _, pr = m.step(texture(img_id), lab['lens'], cur, view=lab['view'])
+            out = {'pred': pr.round(3).tolist(), 'crop': m.crop}
+            if m.crop:
+                L = m.last_crops
+                out.update(share=L['share'].round(4).tolist(), origins=L['origins'].tolist(),
+                           pred_px=[None if not np.all(np.isfinite(q)) else q.round(2).tolist() for q in L['pred_px']])
+        return jsonify(out)
+
     @app.get('/api/status')
     def status():
         return jsonify({'loaded': 'net' in model, 'device': str(model['net'].device) if 'net' in model else None,

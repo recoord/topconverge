@@ -41,7 +41,7 @@ def main():
             continue
         t0 = time.time()
         tex = net.texture(Path(a.data) / lab['image'])
-        rim, n, ok = net.iterate(tex, lab['lens'], start_points(lab['view'], lab['width'], lab['height']), a.steps, a.alpha)
+        rim, n, ok = net.iterate(tex, lab['lens'], start_points(lab['view'], lab['width'], lab['height']), a.steps, a.alpha, lab['view'])
         err = np.hypot(*(rim - np.asarray(lab['rim'])).T)
         rows.append({'id': p.stem, 'err_px': err.round(2).tolist(), 'steps': n, 'settled': ok, 's': round(time.time() - t0, 2)})
         print(f'{p.stem}: {n:2d} steps{" settled" if ok else ""}, corner error px {np.round(err, 1).tolist()}', flush=True)

@@ -2,6 +2,7 @@
  * (straight in undistorted space, curved through the lens), Step / Auto from the network, state, save, undo / redo. */
 import { lensSide } from '/static/lens.js';
 import { FILTERS } from '/static/filters.js';
+import { NetView } from '/static/netview.js';
 
 const $ = id => document.getElementById(id);
 const ID = decodeURIComponent(location.pathname.split('/').pop());
@@ -85,19 +86,39 @@ function zoomAt(x, y, f) {
 }
 
 // ------------------------------------------------------------- the network view
-let netTimer = 0, netSeq = 0;
+// smooth (default): drawn in the browser (netview.js) on every change, the network's answer fetched as numbers once the rim rests;
+// off: the server's PNG of the exact network input.
+const netv = new NetView($('netview'));
+let netLocal = localStorage.getItem('tc-netlocal') !== '0';
+let netTimer = 0, netSeq = 0, netPred = null;                        // netPred: {rim (as JSON), ...the /api/pred answer}
+fetch('/api/status').then(r => r.json()).then(st => { if (st.weights) { netv.setConfig(st.weights); drawNet(); } }).catch(() => {});
+function drawNet() {
+    if (!netOn || !netLocal || !rim || !lab) return;
+    const pred = netPred && netPred.rim === JSON.stringify(rim) ? netPred : null;
+    netv.draw(img, lab.lens, rim, lab.view === 'R', pred);
+}
 function scheduleNet() {
     if (!netOn || !rim) return;
+    if (netLocal) drawNet();
     clearTimeout(netTimer);
     netTimer = setTimeout(async () => {
-        const seq = ++netSeq;
-        const r = await fetch(`/api/view/${ID}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rim }) });
+        const seq = ++netSeq, sent = JSON.stringify(rim);
+        const r = await fetch(`/api/${netLocal ? 'pred' : 'view'}/${ID}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rim }) });
         if (!r.ok || seq !== netSeq) return;
+        if (netLocal) { netPred = { ...await r.json(), rim: sent }; drawNet(); return; }
         const url = URL.createObjectURL(await r.blob());
         const old = $('netimg').src;
+        $('netimg').onload = () => $('netview').classList.toggle('wide', $('netimg').naturalWidth > $('netimg').naturalHeight * 1.5);
         $('netimg').src = url;
         if (old.startsWith('blob:')) URL.revokeObjectURL(old);
     }, autoRun ? 0 : 200);
+}
+function setNetLocal(on) {
+    netLocal = on; localStorage.setItem('tc-netlocal', on ? '1' : '0');
+    $('netlocal').checked = on;
+    $('netview').classList.toggle('local', on);
+    netv.show(on);
+    scheduleNet();
 }
 function showNet(on) {
     netOn = on; localStorage.setItem('tc-net', on ? '1' : '0');
@@ -105,6 +126,7 @@ function showNet(on) {
     $('netbtn').classList.toggle('on', on);
     scheduleNet();
 }
+$('netlocal').onchange = e => setNetLocal(e.target.checked);
 function showHelp(on) {
     helpOn = on; localStorage.setItem('tc-help', on ? '1' : '0');
     $('help').style.display = on ? 'block' : 'none';
@@ -208,7 +230,7 @@ work.addEventListener('wheel', e => {
     const [x, y] = local(e), d = e.deltaMode === 1 ? e.deltaY * 33 : e.deltaY;
     zoomAt(x, y, Math.exp(-d * 0.0015));
 }, { passive: false });
-new ResizeObserver(() => draw()).observe(work);
+new ResizeObserver(() => { draw(); drawNet(); }).observe(work);
 
 // ------------------------------------------------------------- buttons and keys
 async function save() {
@@ -282,9 +304,10 @@ $('name').textContent = ID;
 $('meta').textContent = `${lab.view} lens · ${lab.split}${lab.auto_used ? ' · auto used' : ''}${lab.edited ? ' · edited ' + lab.edited : ''}`;
 $('back').href = `/`;
 setQuality(quality);
+setNetLocal(netLocal);
 showNet(netOn);
 showHelp(helpOn);
-img.onload = () => fit();
+img.onload = () => { fit(); drawNet(); };
 img.src = `/images/${ID}.jpg`;
 fetch('/api/items').then(r => r.json()).then(items => {
     const f = FILTERS[QS.get('f')] || FILTERS.all, v = QS.get('v');
